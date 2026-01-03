@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <array>
-#include <membus.h>
+#include "membus.h"
 
 enum addr_mode{
     imm,//immediate
