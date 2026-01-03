@@ -2,7 +2,6 @@
 
 MemoryBus::MemoryBus(){
     RAM.fill(0x00);
-    stk.fill(0x00);
 }
 
 void MemoryBus::write_mem(uint16_t addr, uint8_t data){
@@ -23,4 +22,8 @@ void MemoryBus::push_stk(uint8_t sp, uint8_t data){
 
 uint8_t MemoryBus::pop_stk(uint8_t sp){
     return read_mem(0x100+sp);
+}
+
+void MemoryBus::attach_rom(ROM &r){
+    rom = &r;
 }

@@ -1,6 +1,11 @@
 #include "rom.h"
 #include <iostream>
 
+ROM::ROM(){
+    prg_size = 0;
+    chr_size = 0;
+}
+
 bool ROM::load_rom(const std::string& rom_path){
     std::ifstream rom(rom_path,std::ios::binary);
     if(!rom.is_open()){

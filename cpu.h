@@ -10,7 +10,7 @@ enum addr_mode{
     zpy,//zeropage + yindexed
     indx,//indirect + xindexed
     indy,//indirect + yindexed
-    abs,//absolute
+    _abs,//absolute
     absx,//absolute + xindexed
     absy, //absolute + yindexed
     acc,//accumulator
@@ -45,7 +45,7 @@ class CPU{
     void set_flag(flag f,bool val);
     uint16_t get_addr(addr_mode mode);
     void adc(uint16_t addr);
-    void and(uint16_t addr);
+    void _and(uint16_t addr);
     void asl(uint16_t addr,addr_mode mode);
     void bit(uint16_t addr);
     void brk();
@@ -73,7 +73,6 @@ class CPU{
 
     public:
     CPU();
-    ~CPU();
 
     void nmi();
     void irq();

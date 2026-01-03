@@ -23,6 +23,7 @@ void CPU::set_flag(flag f, bool val){
 uint16_t CPU::get_addr(addr_mode mode){
     uint16_t addr;
     page_crossed = 0;
+    uint16_t lo,hi,base;
     switch (mode)
     {
     case imm:
@@ -38,49 +39,50 @@ uint16_t CPU::get_addr(addr_mode mode){
         addr = (bus->read_mem(pc++)+y)&0xff;
         break;
     case indx:
-        uint16_t base = bus->read_mem(pc++);
-        uint16_t lo = bus->read_mem((uint16_t)(base+(uint16_t)x)&0xff);
-        uint16_t hi = bus->read_mem((uint16_t)(base+(uint16_t)x+1)&0xff);
+        base = bus->read_mem(pc++);
+        lo = bus->read_mem((uint16_t)(base+(uint16_t)x)&0xff);
+        hi = bus->read_mem((uint16_t)(base+(uint16_t)x+1)&0xff);
         addr = (hi << 8)|lo;
         break;
     case indy:
-        uint16_t base = bus->read_mem(pc++);
-        uint16_t lo = bus->read_mem(base&0xff);
-        uint16_t hi = bus->read_mem((base+1)&0xff);
+        base = bus->read_mem(pc++);
+        lo = bus->read_mem(base&0xff);
+        hi = bus->read_mem((base+1)&0xff);
         addr = ((hi << 8)|lo)+y;
         if ((addr & 0xFF00) != (hi << 8)) page_crossed = true;
         break;
-    case abs:
-        uint16_t lo = bus->read_mem(pc++);
-        uint16_t hi = bus->read_mem(pc++);
+    case _abs:
+        lo = bus->read_mem(pc++);
+        hi = bus->read_mem(pc++);
         addr = (hi << 8)|lo;
         break;
     case absx:
-        uint16_t lo = bus->read_mem(pc++);
-        uint16_t hi = bus->read_mem(pc++);
+        lo = bus->read_mem(pc++);
+        hi = bus->read_mem(pc++);
         addr = ((hi << 8)|lo) + (uint16_t)x;
         if((addr&0xff00) != (hi<<8)) page_crossed = true;
         break;
     case absy:
-        uint16_t lo = bus->read_mem(pc++);
-        uint16_t hi = bus->read_mem(pc++);
+        lo = bus->read_mem(pc++);
+        hi = bus->read_mem(pc++);
         addr = ((hi << 8)|lo) + (uint16_t)y;
         if((addr&0xff00) != (hi<<8)) page_crossed = true;
         break;
-    case rel:
+    case rel:{
         uint16_t rel_offset = bus->read_mem(pc++);
         if(rel_offset&0x80) rel_offset |= 0xff00;
         addr = pc + (int16_t)rel_offset;
         if((addr & 0xff00) != (pc & 0xff00)) page_crossed = true;
         break;
-    case ind:
-        uint16_t l = bus->read_mem(pc++);
-        uint16_t h = bus->read_mem(pc++);
-        uint16_t ind_addr = (h<<8)|l;
+    }
+    case ind:{
+        lo = bus->read_mem(pc++);
+        hi = bus->read_mem(pc++);
+        uint16_t ind_addr = (hi<<8)|lo;
         if((ind_addr & 0xff) == 0xff) addr = ((uint16_t)bus->read_mem(ind_addr&0xff00)<<8)|bus->read_mem(ind_addr);
         else addr = ((uint16_t)bus->read_mem(ind_addr+1)<<8)|bus->read_mem(ind_addr);
         break;
-
+    }
     default:
         addr = 0;
         break;
@@ -108,7 +110,7 @@ void CPU::adc(uint16_t addr){
     a = res & 0xff;
 }
 
-void CPU::and(uint16_t addr){
+void CPU::_and(uint16_t addr){
     uint8_t mem = bus->read_mem(addr);
     a &= mem;
     set_flag(Z,(a&0xff) == 0);
@@ -337,6 +339,8 @@ void CPU::sbc(uint16_t addr){
 int CPU::run_instr(){
     uint16_t addr;
     uint16_t op = bus->read_mem(pc++);
+    uint8_t val;
+    uint16_t lo,hi;
     int cycles = 0;
     switch(op){
         case 0x00:
@@ -372,13 +376,13 @@ int CPU::run_instr(){
             cycles = 2;
             break;
         case 0x0d:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             ora(addr);
             cycles = 4;
             break;
         case 0x0e:
-            addr = get_addr(abs);
-            asl(addr,abs);
+            addr = get_addr(_abs);
+            asl(addr,_abs);
             cycles = 6;
             break;
         case 0x10:
@@ -428,7 +432,7 @@ int CPU::run_instr(){
             cycles = 7;
             break;
         case 0x20:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             push(((pc-1)>>8)&0xff);
             push((pc-1)&0xff);
             pc = addr;
@@ -436,7 +440,7 @@ int CPU::run_instr(){
             break;
         case 0x21:
             addr = get_addr(indx);
-            and(addr);
+            _and(addr);
             cycles = 6;
             break;
         case 0x24:
@@ -446,7 +450,7 @@ int CPU::run_instr(){
             break;
         case 0x25:
             addr = get_addr(zp);
-            and(addr);
+            _and(addr);
             cycles = 3;
             break;
         case 0x26:
@@ -455,7 +459,7 @@ int CPU::run_instr(){
             cycles = 5;
             break;
         case 0x28:
-            uint8_t val = pop();
+            val = pop();
             status = val;
             set_flag(U,true);
             set_flag(B,false);
@@ -463,7 +467,7 @@ int CPU::run_instr(){
             break;
         case 0x29:
             addr = get_addr(imm);
-            and(addr);
+            _and(addr);
             cycles = 2;
             break;
         case 0x2a:
@@ -471,18 +475,18 @@ int CPU::run_instr(){
             cycles = 2;
             break;
         case 0x2c:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             bit(addr);
             cycles = 4;
             break;
         case 0x2d:
-            addr = get_addr(abs);
-            and(addr);
+            addr = get_addr(_abs);
+            _and(addr);
             cycles = 4;
             break;
         case 0x2e:
-            addr = get_addr(abs);
-            rol(addr,abs);
+            addr = get_addr(_abs);
+            rol(addr,_abs);
             cycles = 6;
             break;
         case 0x30:
@@ -496,13 +500,13 @@ int CPU::run_instr(){
             break;
         case 0x31:
             addr = get_addr(indy);
-            and(addr);
+            _and(addr);
             cycles = 5;
             if(page_crossed)cycles++;
             break;
         case 0x35:
             addr = get_addr(zpx);
-            and(addr);
+            _and(addr);
             cycles = 4;
             break;
         case 0x36:
@@ -516,13 +520,13 @@ int CPU::run_instr(){
             break;
         case 0x39:
             addr = get_addr(absy);
-            and(addr);
+            _and(addr);
             cycles = 4;
             if(page_crossed)cycles++;
             break;
         case 0x3d:
             addr = get_addr(absx);
-            and(addr);
+            _and(addr);
             cycles = 4;
             if(page_crossed)cycles++;
             break;
@@ -533,8 +537,8 @@ int CPU::run_instr(){
             break;
         case 0x40:
             status = pop();
-            uint16_t lo = pop();   
-            uint16_t hi = pop();
+            lo = pop();   
+            hi = pop();
             pc = (hi << 8)|lo;
             set_flag(U,true);
             set_flag(B,false);
@@ -569,18 +573,18 @@ int CPU::run_instr(){
             cycles = 2;
             break;
         case 0x4c:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             pc = addr;
             cycles = 3;
             break;
         case 0x4d:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             eor(addr);
             cycles = 4;
             break;
         case 0x4e:
-            addr = get_addr(abs);
-            lsr(addr,abs);
+            addr = get_addr(_abs);
+            lsr(addr,_abs);
             cycles = 6;
             break; 
         case 0x50:
@@ -630,8 +634,8 @@ int CPU::run_instr(){
             cycles = 7;
             break;
         case 0x60:
-            uint16_t lo = pop();   
-            uint16_t hi = pop();
+            lo = pop();   
+            hi = pop();
             pc = ((hi << 8)|lo)+1;
             cycles = 6;
             break;
@@ -669,13 +673,13 @@ int CPU::run_instr(){
             cycles = 5;
             break;
         case 0x6d:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             adc(addr);
             cycles = 4;
             break;
         case 0x6e:
-            addr = get_addr(abs);
-            ror(addr,abs);
+            addr = get_addr(_abs);
+            ror(addr,_abs);
             cycles = 6;
             break;
         case 0x70:
@@ -755,17 +759,17 @@ int CPU::run_instr(){
             cycles = 2;
             break;
         case 0x8c:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             bus->write_mem(addr,y);
             cycles = 4;
             break;
         case 0x8d:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             bus->write_mem(addr,a);
             cycles = 4;
             break;
         case 0x8e:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             bus->write_mem(addr,x);
             cycles = 4;
             break;
@@ -867,17 +871,17 @@ int CPU::run_instr(){
             cycles = 2;
             break;
         case 0xac:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             ldy(addr);
             cycles = 4;
             break;
         case 0xad:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             lda(addr);
             cycles = 4;
             break;
         case 0xae:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             ldx(addr);
             cycles = 4;
             break;
@@ -984,17 +988,17 @@ int CPU::run_instr(){
             cycles = 2;
             break;
         case 0xcc:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             cpy(addr);
             cycles = 4;
             break;
         case 0xcd:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             cmp(addr);
             cycles = 4;
             break;
         case 0xce:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             dec(addr);
             cycles = 6;
             break;
@@ -1082,17 +1086,17 @@ int CPU::run_instr(){
             cycles = 2;
             break;
         case 0xec:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             cpx(addr);
             cycles = 4;
             break;
         case 0xed:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             sbc(addr);
             cycles = 4;
             break;
         case 0xee:
-            addr = get_addr(abs);
+            addr = get_addr(_abs);
             inc(addr);
             cycles = 6;
             break;
@@ -1146,4 +1150,8 @@ int CPU::run_instr(){
             cycles = 0;
     }
     return cycles;
+}
+
+void CPU::attach_membus(MemoryBus* m){
+    bus = m;
 }
