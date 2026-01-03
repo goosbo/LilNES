@@ -88,6 +88,16 @@ uint16_t CPU::get_addr(addr_mode mode){
     return addr;
 }
 
+void CPU::push(uint8_t data){
+    bus->push_stk(sp,data);
+    sp--;
+}
+
+uint8_t CPU::pop(){
+    sp++;
+    return bus->pop_stk(sp);
+}
+
 void CPU::adc(uint16_t addr){
     uint8_t mem = bus->read_mem(addr);
     uint16_t res = a + mem + get_flag(C);
@@ -128,9 +138,9 @@ void CPU::bit(uint16_t addr){
 
 void CPU::brk(){
     pc++;
-    bus->push_stk((pc >> 8)&0xff);
-    bus->push_stk(pc&0xff);
-    bus->push_stk(status|B|U);
+    push((pc >> 8)&0xff);
+    push(pc&0xff);
+    push(status|B|U);
     set_flag(I,true);
     uint16_t lo = bus->read_mem(0xfffe);
     uint16_t hi = bus->read_mem(0xffff);
@@ -138,12 +148,12 @@ void CPU::brk(){
 }
 
 void CPU::nmi(){
-    bus->push_stk((pc >> 8)&0xff);
-    bus->push_stk(pc&0xff);
+    push((pc >> 8)&0xff);
+    push(pc&0xff);
     set_flag(B,false);
     set_flag(U,true);
     set_flag(I,true);
-    bus->push_stk(status);
+    push(status);
     uint16_t lo = bus->read_mem(0xfffa);
     uint16_t hi = bus->read_mem(0xfffb);
     pc = (hi << 8)|lo;
@@ -151,12 +161,12 @@ void CPU::nmi(){
 
 void CPU::irq(){
     if(get_flag(I)) return;
-    bus->push_stk((pc >> 8)&0xff);
-    bus->push_stk(pc&0xff);
+    push((pc >> 8)&0xff);
+    push(pc&0xff);
     set_flag(B,false);
     set_flag(U,true);
     set_flag(I,true);
-    bus->push_stk(status);
+    push(status);
     uint16_t lo = bus->read_mem(0xfffe);
     uint16_t hi = bus->read_mem(0xffff);
     pc = (hi << 8)|lo;
@@ -282,7 +292,7 @@ void CPU::ora(uint16_t addr){
 }
 
 void CPU::pla(){
-    a = bus->pop_stk();
+    a = pop();
     set_flag(N,a&0x80);
     set_flag(Z,a==0);
 }
@@ -349,7 +359,7 @@ int CPU::run_instr(){
             cycles = 5;
             break;
         case 0x08:
-            bus->push_stk(status|B|U);
+            push(status|B|U);
             cycles = 3;
             break;
         case 0x09:
@@ -419,8 +429,8 @@ int CPU::run_instr(){
             break;
         case 0x20:
             addr = get_addr(abs);
-            bus->push_stk(((pc-1)>>8)&0xff);
-            bus->push_stk((pc-1)&0xff);
+            push(((pc-1)>>8)&0xff);
+            push((pc-1)&0xff);
             pc = addr;
             cycles = 6;
             break;
@@ -445,7 +455,7 @@ int CPU::run_instr(){
             cycles = 5;
             break;
         case 0x28:
-            uint8_t val = bus->pop_stk();
+            uint8_t val = pop();
             status = val;
             set_flag(U,true);
             set_flag(B,false);
@@ -522,9 +532,9 @@ int CPU::run_instr(){
             cycles = 7;
             break;
         case 0x40:
-            status = bus->pop_stk();
-            uint16_t lo = bus->pop_stk();   
-            uint16_t hi = bus->pop_stk();
+            status = pop();
+            uint16_t lo = pop();   
+            uint16_t hi = pop();
             pc = (hi << 8)|lo;
             set_flag(U,true);
             set_flag(B,false);
@@ -546,7 +556,7 @@ int CPU::run_instr(){
             cycles = 5;
             break;
         case 0x48:
-            bus->push_stk(a);
+            push(a);
             cycles = 3;
             break;
         case 0x49:
@@ -620,8 +630,8 @@ int CPU::run_instr(){
             cycles = 7;
             break;
         case 0x60:
-            uint16_t lo = bus->pop_stk();   
-            uint16_t hi = bus->pop_stk();
+            uint16_t lo = pop();   
+            uint16_t hi = pop();
             pc = ((hi << 8)|lo)+1;
             cycles = 6;
             break;

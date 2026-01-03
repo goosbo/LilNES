@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdint>
 #include <array>
 #include <membus.h>
@@ -67,7 +68,9 @@ class CPU{
     void rol(uint16_t addr,addr_mode mode);
     void ror(uint16_t addr,addr_mode mode);
     void sbc(uint16_t addr);
-    
+    void push(uint8_t data);
+    uint8_t pop();
+
     public:
     CPU();
     ~CPU();
