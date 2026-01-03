@@ -14,7 +14,8 @@ enum addr_mode{
     absy, //absolute + yindexed
     acc,//accumulator
     imp,//implied,
-    rel//relative
+    rel,//relative,
+    ind//indirect
 };
 
 enum flag{
@@ -45,21 +46,8 @@ class CPU{
     void adc(uint16_t addr);
     void and(uint16_t addr);
     void asl(uint16_t addr,addr_mode mode);
-    void branch(bool cond, uint16_t addr);
-    void bcc(uint16_t addr);
-    void bcs(uint16_t addr);
-    void beq(uint16_t addr);
-    void bne(uint16_t addr);
-    void bmi(uint16_t addr);
-    void bpl(uint16_t addr);
-    void bvc(uint16_t addr);
-    void bvs(uint16_t addr);
     void bit(uint16_t addr);
     void brk();
-    void clc();
-    void cld();
-    void cli();
-    void clv();
     void cmp(uint16_t addr);
     void cpx(uint16_t addr);
     void cpy(uint16_t addr);
@@ -70,12 +58,22 @@ class CPU{
     void inc(uint16_t addr);
     void inx();
     void iny();
-    
+    void lda(uint16_t addr);
+    void ldx(uint16_t addr);
+    void ldy(uint16_t addr);
+    void lsr(uint16_t addr,addr_mode mode);
+    void ora(uint16_t addr);
+    void pla();
+    void rol(uint16_t addr,addr_mode mode);
+    void ror(uint16_t addr,addr_mode mode);
+    void sbc(uint16_t addr);
+
     public:
     CPU();
     ~CPU();
 
     int run_instr();
+    void emu_loop();
     void attach_membus(MemoryBus* bus);
 
 };
