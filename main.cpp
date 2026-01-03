@@ -6,5 +6,10 @@ int main(){
     MemoryBus membus;
 
     cpu.attach_membus(&membus);
+
+    while(true){
+        int cycles = cpu.run_instr();
+    }
+    
     return 0;
 }

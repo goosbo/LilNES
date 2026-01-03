@@ -137,6 +137,40 @@ void CPU::brk(){
     pc = (hi << 8)|lo;
 }
 
+void CPU::nmi(){
+    bus->push_stk((pc >> 8)&0xff);
+    bus->push_stk(pc&0xff);
+    set_flag(B,false);
+    set_flag(U,true);
+    set_flag(I,true);
+    bus->push_stk(status);
+    uint16_t lo = bus->read_mem(0xfffa);
+    uint16_t hi = bus->read_mem(0xfffb);
+    pc = (hi << 8)|lo;
+}
+
+void CPU::irq(){
+    if(get_flag(I)) return;
+    bus->push_stk((pc >> 8)&0xff);
+    bus->push_stk(pc&0xff);
+    set_flag(B,false);
+    set_flag(U,true);
+    set_flag(I,true);
+    bus->push_stk(status);
+    uint16_t lo = bus->read_mem(0xfffe);
+    uint16_t hi = bus->read_mem(0xffff);
+    pc = (hi << 8)|lo;
+}
+
+void CPU::reset(){
+    a = x = y = 0;
+    sp = 0xFD;
+    status = 0x00|U;
+    uint16_t lo = bus->read_mem(0xfffc);
+    uint16_t hi = bus->read_mem(0xfffd);
+    pc = (hi << 8)|lo;
+}
+
 void CPU::cmp(uint16_t addr){
     uint8_t mem = bus->read_mem(addr);
     uint16_t res =(uint16_t)a-(uint16_t)mem;

@@ -67,11 +67,14 @@ class CPU{
     void rol(uint16_t addr,addr_mode mode);
     void ror(uint16_t addr,addr_mode mode);
     void sbc(uint16_t addr);
-
+    
     public:
     CPU();
     ~CPU();
 
+    void nmi();
+    void irq();
+    void reset();
     int run_instr();
     void emu_loop();
     void attach_membus(MemoryBus* bus);
