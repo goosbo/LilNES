@@ -1,14 +1,18 @@
 #include "cpu.h"
 #include <stdint.h>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 
 CPU::CPU(){
     a = 0x00;
     x = 0x00;
     y = 0x00;
     sp = 0xFD;
-    status = 0x00;
-    pc = 0x0000;
+    status = 0x24;
+    pc = 0xC000;
     page_crossed = false;
+    total_cycles = 7;
 }
 
 uint8_t CPU::get_flag(flag f){
@@ -330,7 +334,7 @@ void CPU::sbc(uint16_t addr){
     mem = ~mem;
     uint16_t res = a + mem + get_flag(C);
     set_flag(C,res>0xff);
-    set_flag(Z,res&0xff == 0);
+    set_flag(Z,(res&0xff) == 0);
     set_flag(N,res&0x80);
     set_flag(V, (~((uint16_t)a ^ (uint16_t)mem) & ((uint16_t)a ^ (uint16_t)res)) & 0x0080);
     a = res & 0xff;
@@ -490,9 +494,9 @@ int CPU::run_instr(){
             cycles = 6;
             break;
         case 0x30:
+            addr = get_addr(rel);
             cycles = 2;
-            if(get_flag(N)){
-                addr = get_addr(rel);
+            if(get_flag(N)){    
                 pc = addr;
                 if(page_crossed)cycles++;
                 cycles++;
@@ -588,9 +592,9 @@ int CPU::run_instr(){
             cycles = 6;
             break; 
         case 0x50:
+            addr = get_addr(rel);
             cycles = 2;
             if(!get_flag(V)){
-                addr = get_addr(rel);
                 pc = addr;
                 if(page_crossed)cycles++;
                 cycles++;
@@ -683,9 +687,9 @@ int CPU::run_instr(){
             cycles = 6;
             break;
         case 0x70:
+            addr = get_addr(rel);
             cycles = 2;
             if(get_flag(V)){
-                addr = get_addr(rel);
                 pc = addr;
                 if(page_crossed)cycles++;
                 cycles++;
@@ -774,9 +778,9 @@ int CPU::run_instr(){
             cycles = 4;
             break;
         case 0x90:
+            addr = get_addr(rel);
             cycles = 2;
             if(!get_flag(C)){
-                addr = get_addr(rel);
                 pc = addr;
                 if(page_crossed)cycles++;
                 cycles++;
@@ -886,9 +890,9 @@ int CPU::run_instr(){
             cycles = 4;
             break;
         case 0xb0:
+            addr = get_addr(rel);
             cycles = 2;
-            if(get_flag(C)){
-                addr = get_addr(rel);
+            if(get_flag(C)){    
                 pc = addr;
                 if(page_crossed)cycles++;
                 cycles++;
@@ -1003,9 +1007,9 @@ int CPU::run_instr(){
             cycles = 6;
             break;
         case 0xd0:
+            addr = get_addr(rel);
             cycles = 2;
             if(!get_flag(Z)){
-                addr = get_addr(rel);
                 pc = addr;
                 if(page_crossed)cycles++;
                 cycles++;
@@ -1101,9 +1105,9 @@ int CPU::run_instr(){
             cycles = 6;
             break;
         case 0xf0:
+            addr = get_addr(rel);
             cycles = 2;
             if(get_flag(Z)){
-                addr = get_addr(rel);
                 pc = addr;
                 if(page_crossed)cycles++;
                 cycles++;
@@ -1155,3 +1159,134 @@ int CPU::run_instr(){
 void CPU::attach_membus(MemoryBus* m){
     bus = m;
 }
+
+
+
+/* debug output for testing with nestest.nes
+
+std::string hex(uint32_t n, uint8_t d) {
+    std::string s(d, '0');
+    for (int i = d - 1; i >= 0; i--, n >>= 4)
+        s[i] = "0123456789ABCDEF"[n & 0xF];
+    return s;
+}
+
+void CPU::log_state() {
+    uint8_t opcode = bus->read_mem(pc);
+    uint8_t lo = bus->read_mem(pc + 1);
+    uint8_t hi = bus->read_mem(pc + 2);
+
+    struct Instr { std::string name; addr_mode mode; int len; };
+    static Instr lookup[256];
+    static bool init = false;
+
+    if (!init) {
+        for (int i = 0; i < 256; i++) lookup[i] = {"???", imp, 1};
+
+        lookup[0xA9] = {"LDA", imm, 2}; lookup[0xA5] = {"LDA", zp, 2};  lookup[0xB5] = {"LDA", zpx, 2}; lookup[0xAD] = {"LDA", _abs, 3}; lookup[0xBD] = {"LDA", absx, 3}; lookup[0xB9] = {"LDA", absy, 3}; lookup[0xA1] = {"LDA", indx, 2}; lookup[0xB1] = {"LDA", indy, 2};
+        lookup[0xA2] = {"LDX", imm, 2}; lookup[0xA6] = {"LDX", zp, 2};  lookup[0xB6] = {"LDX", zpy, 2}; lookup[0xAE] = {"LDX", _abs, 3}; lookup[0xBE] = {"LDX", absy, 3};
+        lookup[0xA0] = {"LDY", imm, 2}; lookup[0xA4] = {"LDY", zp, 2};  lookup[0xB4] = {"LDY", zpx, 2}; lookup[0xAC] = {"LDY", _abs, 3}; lookup[0xBC] = {"LDY", absx, 3};
+        lookup[0x85] = {"STA", zp, 2};  lookup[0x95] = {"STA", zpx, 2}; lookup[0x8D] = {"STA", _abs, 3}; lookup[0x9D] = {"STA", absx, 3}; lookup[0x99] = {"STA", absy, 3}; lookup[0x81] = {"STA", indx, 2}; lookup[0x91] = {"STA", indy, 2};
+        lookup[0x86] = {"STX", zp, 2};  lookup[0x96] = {"STX", zpy, 2}; lookup[0x8E] = {"STX", _abs, 3};
+        lookup[0x84] = {"STY", zp, 2};  lookup[0x94] = {"STY", zpx, 2}; lookup[0x8C] = {"STY", _abs, 3};
+        lookup[0xAA] = {"TAX", imp, 1}; lookup[0xA8] = {"TAY", imp, 1}; lookup[0x8A] = {"TXA", imp, 1}; lookup[0x98] = {"TYA", imp, 1}; lookup[0xBA] = {"TSX", imp, 1}; lookup[0x9A] = {"TXS", imp, 1};
+        lookup[0x48] = {"PHA", imp, 1}; lookup[0x68] = {"PLA", imp, 1}; lookup[0x08] = {"PHP", imp, 1}; lookup[0x28] = {"PLP", imp, 1};
+        lookup[0x69] = {"ADC", imm, 2}; lookup[0x65] = {"ADC", zp, 2}; lookup[0x75] = {"ADC", zpx, 2}; lookup[0x6D] = {"ADC", _abs, 3}; lookup[0x7D] = {"ADC", absx, 3}; lookup[0x79] = {"ADC", absy, 3}; lookup[0x61] = {"ADC", indx, 2}; lookup[0x71] = {"ADC", indy, 2};
+        lookup[0xE9] = {"SBC", imm, 2}; lookup[0xE5] = {"SBC", zp, 2}; lookup[0xF5] = {"SBC", zpx, 2}; lookup[0xED] = {"SBC", _abs, 3}; lookup[0xFD] = {"SBC", absx, 3}; lookup[0xF9] = {"SBC", absy, 3}; lookup[0xE1] = {"SBC", indx, 2}; lookup[0xF1] = {"SBC", indy, 2};
+        lookup[0x29] = {"AND", imm, 2}; lookup[0x25] = {"AND", zp, 2}; lookup[0x35] = {"AND", zpx, 2}; lookup[0x2D] = {"AND", _abs, 3}; lookup[0x3D] = {"AND", absx, 3}; lookup[0x39] = {"AND", absy, 3}; lookup[0x21] = {"AND", indx, 2}; lookup[0x31] = {"AND", indy, 2};
+        lookup[0x49] = {"EOR", imm, 2}; lookup[0x45] = {"EOR", zp, 2}; lookup[0x55] = {"EOR", zpx, 2}; lookup[0x4D] = {"EOR", _abs, 3}; lookup[0x5D] = {"EOR", absx, 3}; lookup[0x59] = {"EOR", absy, 3}; lookup[0x41] = {"EOR", indx, 2}; lookup[0x51] = {"EOR", indy, 2};
+        lookup[0x09] = {"ORA", imm, 2}; lookup[0x05] = {"ORA", zp, 2}; lookup[0x15] = {"ORA", zpx, 2}; lookup[0x0D] = {"ORA", _abs, 3}; lookup[0x1D] = {"ORA", absx, 3}; lookup[0x19] = {"ORA", absy, 3}; lookup[0x01] = {"ORA", indx, 2}; lookup[0x11] = {"ORA", indy, 2};
+        lookup[0xC9] = {"CMP", imm, 2}; lookup[0xC5] = {"CMP", zp, 2}; lookup[0xD5] = {"CMP", zpx, 2}; lookup[0xCD] = {"CMP", _abs, 3}; lookup[0xDD] = {"CMP", absx, 3}; lookup[0xD9] = {"CMP", absy, 3}; lookup[0xC1] = {"CMP", indx, 2}; lookup[0xD1] = {"CMP", indy, 2};
+        lookup[0xE0] = {"CPX", imm, 2}; lookup[0xE4] = {"CPX", zp, 2}; lookup[0xEC] = {"CPX", _abs, 3};
+        lookup[0xC0] = {"CPY", imm, 2}; lookup[0xC4] = {"CPY", zp, 2}; lookup[0xCC] = {"CPY", _abs, 3};
+        lookup[0x24] = {"BIT", zp, 2};  lookup[0x2C] = {"BIT", _abs, 3};
+        lookup[0xE6] = {"INC", zp, 2};  lookup[0xF6] = {"INC", zpx, 2}; lookup[0xEE] = {"INC", _abs, 3}; lookup[0xFE] = {"INC", absx, 3};
+        lookup[0xC6] = {"DEC", zp, 2};  lookup[0xD6] = {"DEC", zpx, 2}; lookup[0xCE] = {"DEC", _abs, 3}; lookup[0xDE] = {"DEC", absx, 3};
+        lookup[0xE8] = {"INX", imp, 1}; lookup[0xC8] = {"INY", imp, 1}; lookup[0xCA] = {"DEX", imp, 1}; lookup[0x88] = {"DEY", imp, 1};
+        lookup[0x0A] = {"ASL", acc, 1}; lookup[0x06] = {"ASL", zp, 2};  lookup[0x16] = {"ASL", zpx, 2}; lookup[0x0E] = {"ASL", _abs, 3}; lookup[0x1E] = {"ASL", absx, 3};
+        lookup[0x4A] = {"LSR", acc, 1}; lookup[0x46] = {"LSR", zp, 2};  lookup[0x56] = {"LSR", zpx, 2}; lookup[0x4E] = {"LSR", _abs, 3}; lookup[0x5E] = {"LSR", absx, 3};
+        lookup[0x2A] = {"ROL", acc, 1}; lookup[0x26] = {"ROL", zp, 2};  lookup[0x36] = {"ROL", zpx, 2}; lookup[0x2E] = {"ROL", _abs, 3}; lookup[0x3E] = {"ROL", absx, 3};
+        lookup[0x6A] = {"ROR", acc, 1}; lookup[0x66] = {"ROR", zp, 2};  lookup[0x76] = {"ROR", zpx, 2}; lookup[0x6E] = {"ROR", _abs, 3}; lookup[0x7E] = {"ROR", absx, 3};
+        lookup[0x4C] = {"JMP", _abs, 3}; lookup[0x6C] = {"JMP", ind, 3};
+        lookup[0x20] = {"JSR", _abs, 3}; lookup[0x60] = {"RTS", imp, 1};
+        lookup[0x00] = {"BRK", imp, 1};  lookup[0x40] = {"RTI", imp, 1};
+        lookup[0x10] = {"BPL", rel, 2}; lookup[0x30] = {"BMI", rel, 2};
+        lookup[0x50] = {"BVC", rel, 2}; lookup[0x70] = {"BVS", rel, 2};
+        lookup[0x90] = {"BCC", rel, 2}; lookup[0xB0] = {"BCS", rel, 2};
+        lookup[0xF0] = {"BEQ", rel, 2}; lookup[0xD0] = {"BNE", rel, 2};
+        lookup[0xEA] = {"NOP", imp, 1};
+        lookup[0x18] = {"CLC", imp, 1}; lookup[0x38] = {"SEC", imp, 1};
+        lookup[0x58] = {"CLI", imp, 1}; lookup[0x78] = {"SEI", imp, 1};
+        lookup[0xB8] = {"CLV", imp, 1}; lookup[0xD8] = {"CLD", imp, 1}; lookup[0xF8] = {"SED", imp, 1};
+        init = true;
+    }
+
+    Instr inst = lookup[opcode];
+    std::stringstream hex_str;
+    hex_str << hex(opcode, 2);
+    if (inst.len > 1) hex_str << " " << hex(lo, 2);
+    if (inst.len > 2) hex_str << " " << hex(hi, 2);
+
+    std::stringstream asm_str;
+    asm_str << inst.name << " ";
+
+    if (inst.mode == imm) {
+        asm_str << "#$" << hex(lo, 2);
+    } 
+    else if (inst.mode == zp) {
+        asm_str << "$" << hex(lo, 2) << " = " << hex(bus->read_mem(lo), 2);
+    } 
+    else if (inst.mode == zpx) {
+        asm_str << "$" << hex(lo, 2) << ",X @ " << hex((lo+x)&0xFF, 2) << " = " << hex(bus->read_mem((lo+x)&0xFF), 2);
+    }
+    else if (inst.mode == zpy) {
+        asm_str << "$" << hex(lo, 2) << ",Y @ " << hex((lo+y)&0xFF, 2) << " = " << hex(bus->read_mem((lo+y)&0xFF), 2);
+    }
+    else if (inst.mode == _abs) {
+        uint16_t addr = (hi << 8) | lo;
+        if(inst.name == "JMP" || inst.name == "JSR")
+             asm_str << "$" << hex(addr, 4);
+        else 
+             asm_str << "$" << hex(addr, 4) << " = " << hex(bus->read_mem(addr), 2);
+    } 
+    else if (inst.mode == absx) {
+         uint16_t addr = (hi << 8) | lo;
+         asm_str << "$" << hex(addr, 4) << ",X @ " << hex((addr+x)&0xFFFF, 4) << " = " << hex(bus->read_mem((addr+x)&0xFFFF), 2);
+    }
+    else if (inst.mode == absy) {
+         uint16_t addr = (hi << 8) | lo;
+         asm_str << "$" << hex(addr, 4) << ",Y @ " << hex((addr+y)&0xFFFF, 4) << " = " << hex(bus->read_mem((addr+y)&0xFFFF), 2);
+    }
+    else if (inst.mode == ind) {
+         uint16_t addr = (hi << 8) | lo;
+         asm_str << "($" << hex(addr, 4) << ")";
+    }
+    else if (inst.mode == indx) {
+         asm_str << "($" << hex(lo, 2) << ",X) @ " << hex((lo+x)&0xFF, 2) << " = " << hex(bus->read_mem((lo+x)&0xFF), 4);
+    }
+    else if (inst.mode == indy) {
+         asm_str << "($" << hex(lo, 2) << "),Y = " << hex(bus->read_mem((lo+y)&0xFF), 4);
+    }
+    else if (inst.mode == rel) {
+        int8_t offset = (int8_t)lo;
+        uint16_t target = pc + 2 + offset;
+        asm_str << "$" << hex(target, 4);
+    }
+
+    std::cout << hex(pc, 4) << "  ";
+    
+    std::string s_hex = hex_str.str();
+    std::cout << s_hex;
+    for(int i=0; i < 10 - s_hex.length(); i++) std::cout << " "; 
+    std::string s_asm = asm_str.str();
+    std::cout << s_asm;
+    for(int i=0; i < 32 - s_asm.length(); i++) std::cout << " "; 
+    std::cout << "A:" << hex(a, 2) << " "
+              << "X:" << hex(x, 2) << " "
+              << "Y:" << hex(y, 2) << " "
+              << "P:" << hex(status, 2) << " "
+              << "SP:" << hex(sp, 2) << " "
+              << "CYC:" << std::dec << total_cycles 
+              << "\n";
+}
+*/

@@ -41,6 +41,7 @@ class CPU{
     uint8_t status;
     MemoryBus* bus;
     bool page_crossed;
+    
     uint8_t get_flag(flag f);
     void set_flag(flag f,bool val);
     uint16_t get_addr(addr_mode mode);
@@ -73,12 +74,13 @@ class CPU{
 
     public:
     CPU();
-
+    uint64_t total_cycles;
     void nmi();
     void irq();
     void reset();
     int run_instr();
     void emu_loop();
+    void log_state();
     void attach_membus(MemoryBus* bus);
 
 };
