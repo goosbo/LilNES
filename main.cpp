@@ -3,13 +3,16 @@
 #include "rom.h"
 #include <iostream>
 int main(){
+    PPU ppu;
     CPU cpu;
     MemoryBus membus;
     ROM rom;
 
     rom.load_rom("nestest.nes");
-    membus.attach_rom(rom);
+    membus.attach_ppu(&ppu);
+    membus.attach_rom(&rom);
     cpu.attach_membus(&membus);
+    ppu.attach_cpu(&cpu);
     int steps = 0;
     while(steps++ <10000){
         //cpu.log_state();

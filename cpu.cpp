@@ -151,6 +151,7 @@ void CPU::brk(){
     uint16_t lo = bus->read_mem(0xfffe);
     uint16_t hi = bus->read_mem(0xffff);
     pc = (hi << 8)|lo;
+    total_cycles += 7;
 }
 
 void CPU::nmi(){
@@ -158,11 +159,12 @@ void CPU::nmi(){
     push(pc&0xff);
     set_flag(B,false);
     set_flag(U,true);
-    set_flag(I,true);
     push(status);
+    set_flag(I,true);
     uint16_t lo = bus->read_mem(0xfffa);
     uint16_t hi = bus->read_mem(0xfffb);
     pc = (hi << 8)|lo;
+    total_cycles+=7;
 }
 
 void CPU::irq(){
@@ -171,11 +173,12 @@ void CPU::irq(){
     push(pc&0xff);
     set_flag(B,false);
     set_flag(U,true);
-    set_flag(I,true);
     push(status);
+    set_flag(I,true);
     uint16_t lo = bus->read_mem(0xfffe);
     uint16_t hi = bus->read_mem(0xffff);
     pc = (hi << 8)|lo;
+    total_cycles+=7;
 }
 
 void CPU::reset(){
