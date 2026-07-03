@@ -1,4 +1,5 @@
 #include "membus.h"
+#include "cpu.h"
 
 MemoryBus::MemoryBus(){
     RAM.fill(0x00);
@@ -7,7 +8,15 @@ MemoryBus::MemoryBus(){
 void MemoryBus::write_mem(uint16_t addr, uint8_t data){
     if(addr >= 0x0000 && addr <= 0x1FFF) RAM[addr&0x7ff] = data;
     else if(addr >= 0x2000 && addr <= 0x3fff)ppu->cpu_write(addr,data);
-    else if(addr == 0x4014)ppu->handle_oamdma(data);
+    else if(addr == 0x4014){
+        std::array<uint8_t,256> dma_data;
+        uint16_t base = data << 8;
+        for(int i = 0; i < 256; i++) dma_data[i] = read_mem(base + i);
+        ppu->handle_oamdma(dma_data);
+        if(cpu){
+            cpu->suspended += 513;
+        }
+    }
     else if(addr >= 0x6000)rom->cpu_write(addr,data);
     
 }
@@ -35,4 +44,8 @@ void MemoryBus::attach_rom(ROM *r){
 
 void MemoryBus::attach_ppu(PPU *p){
     ppu = p;
+}
+
+void MemoryBus::attach_cpu(CPU *c) {
+    cpu = c;
 }

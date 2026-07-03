@@ -75,6 +75,7 @@ class CPU{
     public:
     CPU();
     uint64_t total_cycles;
+    int suspended = 0;
     void nmi();
     void irq();
     void reset();

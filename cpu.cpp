@@ -151,9 +151,10 @@ void CPU::brk(){
     uint16_t lo = bus->read_mem(0xfffe);
     uint16_t hi = bus->read_mem(0xffff);
     pc = (hi << 8)|lo;
-    total_cycles += 7;
+    // total_cycles += 7;
 }
 
+// make ppu call this shit somehow when nmi interrupt happens
 void CPU::nmi(){
     push((pc >> 8)&0xff);
     push(pc&0xff);
@@ -793,7 +794,7 @@ int CPU::run_instr(){
             addr = get_addr(indy);
             bus->write_mem(addr,a);
             cycles = 6;
-            if(page_crossed)cycles++;
+            //if(page_crossed)cycles++;
             break;
         case 0x94:
             addr = get_addr(zpx);
@@ -1165,8 +1166,6 @@ void CPU::attach_membus(MemoryBus* m){
 
 
 
-/* debug output for testing with nestest.nes
-
 std::string hex(uint32_t n, uint8_t d) {
     std::string s(d, '0');
     for (int i = d - 1; i >= 0; i--, n >>= 4)
@@ -1289,7 +1288,8 @@ void CPU::log_state() {
               << "Y:" << hex(y, 2) << " "
               << "P:" << hex(status, 2) << " "
               << "SP:" << hex(sp, 2) << " "
+              << "PPU:" << std::setw(3) << std::setfill(' ') << bus->ppu->scanline << ","
+              << std::setw(3) << std::setfill(' ') << bus->ppu->cycle << " "
               << "CYC:" << std::dec << total_cycles 
               << "\n";
 }
-*/

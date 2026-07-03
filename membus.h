@@ -3,17 +3,23 @@
 #include <array>
 #include "rom.h"
 #include "ppu.h"
+
+class CPU;
+
 class MemoryBus{
     private:
     std::array<uint8_t,2048> RAM;
-    PPU *ppu;
+    
     ROM *rom;
+    CPU *cpu;
 
     public:
+    PPU *ppu;
     MemoryBus();
 
     void attach_rom(ROM *rom);
     void attach_ppu(PPU *ppu);
+    void attach_cpu(CPU *cpu);
     void write_mem(uint16_t addr, uint8_t data);
     uint8_t read_mem(uint16_t addr);
     
