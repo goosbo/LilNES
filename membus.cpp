@@ -17,6 +17,7 @@ void MemoryBus::write_mem(uint16_t addr, uint8_t data){
             cpu->suspended += 513;
         }
     }
+    else if(addr == 0x4016 && controller)controller->write(data);
     else if(addr >= 0x6000)rom->cpu_write(addr,data);
     
 }
@@ -26,7 +27,7 @@ uint8_t MemoryBus::read_mem(uint16_t addr){
     if(rom->cpu_read(addr,data))return data;
     if(addr >= 0x0000 && addr <= 0x1FFF) return RAM[addr&0x7ff];
     else if(addr >= 0x2000 && addr <= 0x3fff)return ppu->cpu_read(addr);
-
+else if(addr == 0x4016 && controller)return controller->read();
     return data;
 }
 
@@ -48,4 +49,8 @@ void MemoryBus::attach_ppu(PPU *p){
 
 void MemoryBus::attach_cpu(CPU *c) {
     cpu = c;
+}
+
+void MemoryBus::attach_controller(Controller *c){
+    controller = c;
 }

@@ -3,6 +3,7 @@
 #include <array>
 #include "rom.h"
 #include "ppu.h"
+#include "controller.h"
 
 class CPU;
 
@@ -12,6 +13,7 @@ class MemoryBus{
     
     ROM *rom;
     CPU *cpu;
+    Controller *controller;
 
     public:
     PPU *ppu;
@@ -20,6 +22,7 @@ class MemoryBus{
     void attach_rom(ROM *rom);
     void attach_ppu(PPU *ppu);
     void attach_cpu(CPU *cpu);
+    void attach_controller(Controller *controller);
     void write_mem(uint16_t addr, uint8_t data);
     uint8_t read_mem(uint16_t addr);
     
