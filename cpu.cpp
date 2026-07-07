@@ -10,7 +10,7 @@ CPU::CPU(){
     y = 0x00;
     sp = 0xFD;
     status = 0x24;
-    pc = 0xC000;
+    pc = 0x0000;
     page_crossed = false;
     total_cycles = 7;
 }
@@ -1163,8 +1163,6 @@ int CPU::run_instr(){
 void CPU::attach_membus(MemoryBus* m){
     bus = m;
 }
-
-
 
 std::string hex(uint32_t n, uint8_t d) {
     std::string s(d, '0');

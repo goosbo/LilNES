@@ -9,8 +9,13 @@ const int WIDTH = 256;
 const int HEIGHT = 240;
 const int SCALE = 3;
 
-int main(){
+int main(int argc, char* argv[]){
 
+    if (argc < 2) {
+        std::cout << "run with rom path as argument";
+        return 1;
+    }
+    std::string romPath = argv[1];
     InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "lilNES");
     SetTargetFPS(60);
     PPU ppu;
@@ -18,7 +23,7 @@ int main(){
     MemoryBus membus;
     ROM rom;
 
-    rom.load_rom("palette.nes");
+    rom.load_rom(romPath);
     membus.attach_ppu(&ppu);
     membus.attach_rom(&rom);
     membus.attach_cpu(&cpu);
