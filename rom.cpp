@@ -59,3 +59,22 @@ bool ROM::cpu_write(uint16_t addr, uint8_t data){
     if(addr >= 0x8000) return true;
     return false;
 }
+
+bool ROM::ppu_read(uint16_t addr, uint8_t &data){
+    if(addr < 0x2000 && !chr_rom.empty()){
+        data = chr_rom[addr];
+        return true;
+    }
+    return false;
+}
+
+bool ROM::ppu_write(uint16_t addr, uint8_t data){
+    if(addr < 0x2000){
+        if(chr_size == 0){
+            chr_rom[addr] = data;
+            return true;
+        }
+        return false;
+    }
+    return false;
+}

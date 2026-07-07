@@ -34,4 +34,6 @@ class ROM{
         bool load_rom(const std::string& rom_path);
         bool cpu_read(uint16_t addr, uint8_t &data);
         bool cpu_write(uint16_t addr, uint8_t data);
+        bool ppu_read(uint16_t addr, uint8_t &data);
+        bool ppu_write(uint16_t addr, uint8_t data);
 };

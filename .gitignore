@@ -1,4 +1,5 @@
 log.txt
 reflog.txt
-main
-nestest.nes
+main.exe
+*.nes
+.vscode/
