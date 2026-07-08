@@ -1,5 +1,5 @@
-log.txt
-reflog.txt
+*.log
 main.exe
 *.nes
+roms/
 .vscode/
