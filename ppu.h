@@ -5,6 +5,13 @@
 class CPU;
 class ROM;
 
+struct Sprite {
+    uint8_t x;
+    uint8_t y;
+    uint8_t id;
+    uint8_t attrib;
+};
+
 class PPU{
     private:
     uint8_t ctrl;
@@ -29,6 +36,11 @@ class PPU{
     uint16_t attriblow;
     uint16_t attribhigh;
 
+    Sprite sprites[8];
+    uint8_t sprite_count;
+    uint8_t sprite_patlow[8];
+    uint8_t sprite_pathigh[8];
+    bool zero_hit;
 
     bool w;
     CPU *cpu;

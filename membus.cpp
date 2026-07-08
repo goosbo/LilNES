@@ -27,7 +27,7 @@ uint8_t MemoryBus::read_mem(uint16_t addr){
     if(rom->cpu_read(addr,data))return data;
     if(addr >= 0x0000 && addr <= 0x1FFF) return RAM[addr&0x7ff];
     else if(addr >= 0x2000 && addr <= 0x3fff)return ppu->cpu_read(addr);
-else if(addr == 0x4016 && controller)return controller->read();
+    else if(addr == 0x4016 && controller)return controller->read();
     return data;
 }
 

@@ -154,7 +154,7 @@ void CPU::brk(){
     // total_cycles += 7;
 }
 
-// make ppu call this shit somehow when nmi interrupt happens
+// have to test timing
 void CPU::nmi(){
     push((pc >> 8)&0xff);
     push(pc&0xff);
