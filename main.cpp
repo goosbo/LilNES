@@ -2,6 +2,7 @@
 #include "cpu.h"
 #include "membus.h"
 #include "rom.h"
+#include "controller.h"
 #include <iostream>
 
 
@@ -22,11 +23,12 @@ int main(int argc, char* argv[]){
     CPU cpu;
     MemoryBus membus;
     ROM rom;
-
+    Controller controller;
     rom.load_rom(romPath);
     membus.attach_ppu(&ppu);
     membus.attach_rom(&rom);
     membus.attach_cpu(&cpu);
+    membus.attach_controller(&controller);
     cpu.attach_membus(&membus);
     ppu.attach_cpu(&cpu);
     ppu.attach_rom(&rom);
@@ -38,9 +40,19 @@ int main(int argc, char* argv[]){
     Texture2D screenTex = LoadTextureFromImage(screenImg);
     
     while(!WindowShouldClose()){
+        uint8_t state = 0;
+        state |= IsKeyDown(KEY_Z)?keyA:0;
+        state |= IsKeyDown(KEY_X)?keyB:0;
+        state |= IsKeyDown(KEY_A)?Select:0;
+        state |= IsKeyDown(KEY_S)?Start:0;
+        state |= IsKeyDown(KEY_UP)?Up:0;
+        state |= IsKeyDown(KEY_DOWN)?Down:0;
+        state |= IsKeyDown(KEY_LEFT)?Left:0;
+        state |= IsKeyDown(KEY_RIGHT)?Right:0;
+        controller.update(state);
+
         while(!ppu.framedone){
             //if (cpu.suspended == 0) cpu.log_state(); 
-            
             int cpu_cycles = 0;
             if (cpu.suspended > 0){
                 cpu.suspended--;

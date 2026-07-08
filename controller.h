@@ -1,6 +1,17 @@
 #pragma once
 #include <cstdint>
 
+enum key{
+    keyA = 1,
+    keyB = 2,
+    Select = 4,
+    Start = 8,
+    Up = 0x10,
+    Down = 0x20,
+    Left = 0x40,
+    Right = 0x80
+};
+
 class Controller{
     private:
     uint8_t state;
