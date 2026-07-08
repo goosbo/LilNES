@@ -28,9 +28,10 @@ class ROM{
         std::vector<uint8_t> prg_ram;
         uint8_t mapper_id;
         uint8_t prg_size, chr_size;
-        mirroring_type mirroring;
+        
     public:
         ROM();
+        mirroring_type mirroring;
         bool load_rom(const std::string& rom_path);
         bool cpu_read(uint16_t addr, uint8_t &data);
         bool cpu_write(uint16_t addr, uint8_t data);

@@ -69,6 +69,7 @@ void PPU::cpu_write(uint16_t addr,uint8_t data){
             else {
                 t = (t&0x8fff)|((data&7)<<12);
                 t = (t&0xfc1f)|((data&0xf8)<<2);
+                w = 0;
             }
             break;
         case 6:
@@ -121,8 +122,8 @@ void PPU::write_vram_mem(uint16_t addr, uint8_t data) {
     
     if (addr >= 0x2000 && addr < 0x3F00) {
         uint16_t mirrored_addr = addr & 0x2FFF;
-        if (mirrored_addr < 0x2400) nametables[0][mirrored_addr & 0x03FF] = data;
-        else nametables[1][mirrored_addr & 0x03FF] = data;
+        uint16_t nametableidx = (rom->mirroring == VERTICAL)?((mirrored_addr>>10)&1):((mirrored_addr>>11)&1);
+        nametables[nametableidx][mirrored_addr & 0x03FF] = data;
     } 
     else if (addr >= 0x3F00 && addr <= 0x3FFF) {
         uint16_t palette_addr = addr & 0x001F;
@@ -141,8 +142,8 @@ uint8_t PPU::read_vram_mem(uint16_t addr){
     
     if(addr >= 0x2000 && addr < 0x3f00){
         uint16_t mirrored_addr = addr & 0x2FFF;
-        if(mirrored_addr < 0x2400) return nametables[0][mirrored_addr & 0x03FF];
-        else return nametables[1][mirrored_addr & 0x03FF]; 
+        uint16_t nametableidx = (rom->mirroring == VERTICAL)?((mirrored_addr>>10)&1):((mirrored_addr>>11)&1);
+        return nametables[nametableidx][mirrored_addr & 0x03FF]; 
     }
     else if(addr >= 0x3f00 && addr <= 0x3FFF) {
         uint16_t palette_addr = addr & 0x001F;
