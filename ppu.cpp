@@ -47,7 +47,7 @@ void PPU::cpu_write(uint16_t addr,uint8_t data){
             bool prev_nmibit = ctrl&0x80;
             ctrl = data;
             t = (t&0xf3ff)|((data&3)<<10);
-            if(prev_nmibit && (ctrl&0x80) && (status&0x80)) cpu->nmi();
+            if(!prev_nmibit && (ctrl&0x80) && (status&0x80)) cpu->nmi();
         }
             break;
         case 1:
@@ -100,6 +100,7 @@ uint8_t PPU::cpu_read(uint16_t addr){
             status &= 0x7f;
             break;
         case 4:
+            res = OAM[oamaddr];
             break;
         case 7:
             res = databuffer;
@@ -147,6 +148,7 @@ uint8_t PPU::read_vram_mem(uint16_t addr){
     }
     else if(addr >= 0x3f00 && addr <= 0x3FFF) {
         uint16_t palette_addr = addr & 0x001F;
+        if (palette_addr == 0x0010) palette_addr = 0x0000;
         if (palette_addr == 0x0014) palette_addr = 0x0004;
         if (palette_addr == 0x0018) palette_addr = 0x0008;
         if (palette_addr == 0x001C) palette_addr = 0x000C;
@@ -194,9 +196,10 @@ void PPU::step(){
             sprite_count = 0;
             zero_hit = false;
             int size = (ctrl&0x20)?16:8;
+            int targetline = (scanline == 261)?0:scanline + 1;
             for(int i = 0; i < 64 && sprite_count < 8; i++){
                 uint8_t y = OAM[i*4+0];
-                if(scanline-y >=0 && scanline-y < size){
+                if(targetline-y >=0 && targetline-y < size){
                     sprites[sprite_count].y = y;
                     sprites[sprite_count].id = OAM[i*4+1];
                     sprites[sprite_count].attrib = OAM[i*4+2];
@@ -208,9 +211,10 @@ void PPU::step(){
         }
         if (scanline == 261 && cycle >= 280 && cycle <= 304)transfer_addr_y();
         if(cycle == 321){
+            int targetline = (scanline == 261)?0:scanline + 1;
             int size = (ctrl&0x20)?16:8;
             for(int i = 0; i < sprite_count;i++){
-                int row = scanline - sprites[i].y;
+                int row = targetline - sprites[i].y;
                 if(sprites[i].attrib & 0x80)row = size-1-row;
                 uint16_t addrlow;
                 if(size == 8)addrlow = ((ctrl&8)?0x1000:0)|(sprites[i].id<<4)|row;
