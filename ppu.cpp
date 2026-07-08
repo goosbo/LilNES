@@ -195,7 +195,7 @@ void PPU::step(){
             int size = (ctrl&0x20)?16:8;
             for(int i = 0; i < 64 && sprite_count < 8; i++){
                 uint8_t y = OAM[i*4+0];
-                if(scanline-y >=0 && scanline-y <= size){
+                if(scanline-y >=0 && scanline-y < size){
                     sprites[sprite_count].y = y;
                     sprites[sprite_count].id = OAM[i*4+1];
                     sprites[sprite_count].attrib = OAM[i*4+2];
@@ -249,7 +249,7 @@ void PPU::inc_scroll_x(){
     if((mask&0x18) == 0)return;
     if((v&0x1f) == 31){
         v &= ~0x1f;
-        v &= 0x400;
+        v ^= 0x400;
     }
     else v += 1;
 }
@@ -326,7 +326,7 @@ void PPU::render(){
         pixel = 0;
         pal = 0;
     }
-    if(bgpixel == 0&&spixel!=0){
+    else if(bgpixel == 0&&spixel!=0){
         pixel = spixel;
         pal = spal;
     }
