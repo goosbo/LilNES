@@ -1,6 +1,8 @@
 #include "rom.h"
 #include <iostream>
 #include "mapper/mapper0.h"
+#include "mapper/mapper1.h"
+#include "mapper/mapper3.h"
 
 ROM::ROM(){
     prg_size = 0;
@@ -42,6 +44,10 @@ bool ROM::load_rom(const std::string& rom_path){
         case 0:
             mapper = std::make_unique<Mapper0>(prg_size,chr_size);
             break;
+        case 1:
+            mapper = std::make_unique<Mapper1>(prg_size,chr_size);
+        case 3:
+            mapper = std::make_unique<Mapper3>(prg_size,chr_size);
         default:
             std::cout<<"mapper not supported: "<<(int)mapper_id<<"\n";
             return false;
@@ -65,7 +71,7 @@ bool ROM::cpu_read(uint16_t addr, uint8_t &data){
 
 bool ROM::cpu_write(uint16_t addr, uint8_t data){
     uint32_t mapaddr = 0;
-    if(mapper->cpu_write(addr,mapaddr)) return true;
+    if(mapper->cpu_write(addr,mapaddr,data)) return true;
     if(addr >= 0x6000 && addr <= 0x7fff){
         prg_ram[addr&0x1fff] = data;
         return true;
