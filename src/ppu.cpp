@@ -38,6 +38,7 @@ PPU::PPU(){
     framedone = false;
     scanline = 0;
     cycle = 0;
+    oddframe = false;
     for(int i = 0; i < 256*240; i++) screen[i] = 0xFF000000;
 }
 
@@ -101,6 +102,7 @@ uint8_t PPU::cpu_read(uint16_t addr){
             break;
         case 4:
             res = OAM[oamaddr];
+            //if ((oamaddr & 0x03) == 2) res &= 0xE3;
             break;
         case 7:
             res = databuffer;
@@ -123,7 +125,14 @@ void PPU::write_vram_mem(uint16_t addr, uint8_t data) {
     
     if (addr >= 0x2000 && addr < 0x3F00) {
         uint16_t mirrored_addr = addr & 0x2FFF;
-        uint16_t nametableidx = (rom->mirroring == VERTICAL)?((mirrored_addr>>10)&1):((mirrored_addr>>11)&1);
+        uint16_t nametableidx;
+        switch (rom->mirroring){
+            case VERTICAL: nametableidx = (mirrored_addr>>10)&1;break;
+            case ONESCREENLOW: nametableidx = 0;break;
+            case ONESCREENHIGH: nametableidx = 1;break;
+            case HORIZONTAL:
+            default: nametableidx = (mirrored_addr>>11)&1;break;
+        }
         nametables[nametableidx][mirrored_addr & 0x03FF] = data;
     } 
     else if (addr >= 0x3F00 && addr <= 0x3FFF) {
@@ -143,7 +152,14 @@ uint8_t PPU::read_vram_mem(uint16_t addr){
     
     if(addr >= 0x2000 && addr < 0x3f00){
         uint16_t mirrored_addr = addr & 0x2FFF;
-        uint16_t nametableidx = (rom->mirroring == VERTICAL)?((mirrored_addr>>10)&1):((mirrored_addr>>11)&1);
+         uint16_t nametableidx;
+        switch (rom->mirroring){
+            case VERTICAL: nametableidx = (mirrored_addr>>10)&1;break;
+            case ONESCREENLOW: nametableidx = 0;break;
+            case ONESCREENHIGH: nametableidx = 1;break;
+            case HORIZONTAL:
+            default: nametableidx = (mirrored_addr>>11)&1;break;
+        }
         return nametables[nametableidx][mirrored_addr & 0x03FF]; 
     }
     else if(addr >= 0x3f00 && addr <= 0x3FFF) {
@@ -195,17 +211,25 @@ void PPU::step(){
             transfer_addr_x();
             sprite_count = 0;
             zero_hit = false;
+            if (mask & 0x18) oamaddr = 0x00;
             int size = (ctrl&0x20)?16:8;
             int targetline = (scanline == 261)?0:scanline + 1;
             for(int i = 0; i < 64 && sprite_count < 8; i++){
                 uint8_t y = OAM[i*4+0];
-                if(targetline-y >=0 && targetline-y < size){
-                    sprites[sprite_count].y = y;
-                    sprites[sprite_count].id = OAM[i*4+1];
-                    sprites[sprite_count].attrib = OAM[i*4+2];
-                    sprites[sprite_count].x = OAM[i*4+3];
-                    if(i==0)zero_hit = true;
-                    sprite_count++;
+                int row = targetline-y-1;
+                if(row>=0&&row<size){
+                    if(sprite_count<8){
+                        sprites[sprite_count].y = y;
+                        sprites[sprite_count].id = OAM[i*4+1];
+                        sprites[sprite_count].attrib = OAM[i*4+2];
+                        sprites[sprite_count].x = OAM[i*4+3];
+                        if(i==0)zero_hit = true;
+                        sprite_count++;
+                    }
+                    else{
+                        status |= 0x20;
+                        break;
+                    }
                 }
             }
         }
@@ -214,7 +238,7 @@ void PPU::step(){
             int targetline = (scanline == 261)?0:scanline + 1;
             int size = (ctrl&0x20)?16:8;
             for(int i = 0; i < sprite_count;i++){
-                int row = targetline - sprites[i].y;
+                int row = targetline - sprites[i].y-1;
                 if(sprites[i].attrib & 0x80)row = size-1-row;
                 uint16_t addrlow;
                 if(size == 8)addrlow = ((ctrl&8)?0x1000:0)|(sprites[i].id<<4)|row;
@@ -239,12 +263,20 @@ void PPU::step(){
         if(ctrl & 0x80) cpu->nmi();
     }
     cycle++;
+    if (scanline == 261 && cycle == 340 && oddframe && (mask&0x18)) {
+        cycle = 0;
+        scanline = 0;
+        framedone = true;
+        oddframe = !oddframe;
+        return;
+    }
     if(cycle >= 341){
         cycle = 0;
         scanline++;
         if(scanline > 261){
             scanline = 0;
             framedone = true;
+            oddframe = !oddframe;
         } 
     }
 
@@ -302,15 +334,17 @@ void PPU::update_shifters(){
 void PPU::render(){
     bool bgrender = mask&8, srender = mask&0x10;
     if(!bgrender && !srender)return;
+    bool showbgleft = mask&2, showsleft = mask&4;
+    int xpos = cycle-1;
     uint8_t bgpixel = 0,bgpal = 0,spixel = 0,spal = 0;
     bool priority = false,szero = false;
-    if(bgrender){
+    if(bgrender&&(xpos>=8||showbgleft)){
         uint16_t bit = 0x8000>>x;
         bgpixel = (((pathigh&bit)>0)<<1)|((patlow&bit)>0);
         bgpal = (((attribhigh&bit)>0)<<1)|((attriblow&bit)>0);
     }
 
-    if(srender){
+    if(srender&&(xpos>=8||showsleft)){
         for(int i = 0; i < sprite_count; i++){
             int offset = (cycle-1)-sprites[i].x;
             if(offset>=0 && offset<8){

@@ -18,10 +18,7 @@ struct ROM_header{
     char padding[5];
 };
 
-enum mirroring_type{
-    HORIZONTAL,
-    VERTICAL
-};
+
 
 class ROM{
     private:

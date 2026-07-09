@@ -12,14 +12,14 @@ Mapper1::Mapper1(uint8_t pbank, uint8_t cbank):Mapper(pbank, cbank) {
 bool Mapper1::cpu_read(uint16_t addr, uint32_t &mapaddr){
     if(addr >= 0x8000 && addr <= 0xffff){
         uint8_t prgmode = (control>>2)&3;
-        if(prgmode==0|| prgmode==1)mapaddr = ((prgbank_select&0xfe)*0x4000)+(addr&0x7fff);
+        if(prgmode==0|| prgmode==1)mapaddr = (((prgbank_select&0xfe)%prg_bank)*0x4000)+(addr&0x7fff);
         else if(prgmode == 2){
             if(addr>=0x8000&&addr<=0xbfff)mapaddr = addr&0x3fff;
-            else mapaddr = (prgbank_select*0x4000)+(addr&0x3fff);
+            else mapaddr = ((prgbank_select%prg_bank)*0x4000)+(addr&0x3fff);
         }
         else if(prgmode==3){
             if(addr>=0x8000 && addr <= 0xbfff)mapaddr = (prgbank_select*0x4000)+(addr&0x3fff);
-            else mapaddr = ((prg_bank-1)*0x4000)+(addr&0x3fff);
+            else mapaddr = (((prg_bank-1)%prg_bank)*0x4000)+(addr&0x3fff);
         }
         return true;
     }
@@ -64,16 +64,17 @@ bool Mapper1::cpu_write(uint16_t addr, uint32_t &mapaddr, uint8_t data){
 }
 
 bool Mapper1::ppu_read(uint16_t addr, uint32_t &mapaddr){
-    if(addr >= 0 && addr <= 0x1fff){
+    if(addr <= 0x1fff){
         if(chr_bank == 0){
             mapaddr = addr;
             return true;
         }
         uint8_t chrmode = (control>>4)&1;
-        if(chrmode == 0) mapaddr = ((chr_bank0&0xfe)*0x1000)+(addr&0x1fff);
+        uint8_t mod = (chr_bank*2);
+        if(chrmode == 0) mapaddr = (((chr_bank0&0xfe)%mod)*0x1000)+(addr&0x1fff);
         else{
-            if(addr>0&&addr<=0x1fff)mapaddr = (chr_bank0*0x1000)+(addr&0xfff);
-            else mapaddr = (chr_bank1*0x1000)+(addr&0xfff);
+            if(addr<=0xfff)mapaddr = ((chr_bank0%mod)*0x1000)+(addr&0xfff);
+            else mapaddr = ((chr_bank1%mod)*0x1000)+(addr&0xfff);
         }
         return true;
     }
@@ -81,11 +82,21 @@ bool Mapper1::ppu_read(uint16_t addr, uint32_t &mapaddr){
 }
 
 bool Mapper1::ppu_write(uint16_t addr, uint32_t &mapaddr){
-    if(addr>=0x1000 && addr <= 0x1fff){
+    if(addr <= 0x1fff){
         if(chr_bank == 0){
             mapaddr = addr;
             return true;
         }
     }
     return false;
+}
+
+bool Mapper1::get_mirroring(mirroring_type &mirroring){
+    switch(control & 3){
+        case 0: mirroring = ONESCREENLOW; break;
+        case 1: mirroring = ONESCREENHIGH; break;
+        case 2: mirroring = VERTICAL; break;
+        case 3: mirroring = HORIZONTAL; break;
+    }
+    return true;
 }

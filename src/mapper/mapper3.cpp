@@ -21,7 +21,7 @@ bool Mapper3::cpu_write(uint16_t addr, uint32_t &mapaddr, uint8_t data){
 }
 
 bool Mapper3::ppu_read(uint16_t addr, uint32_t &mapaddr){
-    if(addr >= 0 && addr <= 0x1fff){
+    if(addr <= 0x1fff){
         mapaddr = (chrbank_select*0x2000)+addr;
         return true;
     }

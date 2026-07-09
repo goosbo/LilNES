@@ -19,7 +19,7 @@ bool Mapper0::cpu_write(uint16_t addr, uint32_t &mapaddr,uint8_t data){
 }
 
 bool Mapper0::ppu_read(uint16_t addr, uint32_t &mapaddr){
-    if(addr >= 0 && addr <= 0x1fff){
+    if(addr <= 0x1fff){
         mapaddr = addr;
         return true;
     }
@@ -27,7 +27,7 @@ bool Mapper0::ppu_read(uint16_t addr, uint32_t &mapaddr){
 }
 
 bool Mapper0::ppu_write(uint16_t addr, uint32_t &mapaddr){
-    if(addr >= 0 && addr <= 0x1fff){
+    if(addr <= 0x1fff){
         if(chr_bank == 0){
             mapaddr = addr;
             return true;

@@ -12,7 +12,7 @@ private:
 
 public:
     Mapper1(uint8_t pbank, uint8_t cbank);
-
+    bool get_mirroring(mirroring_type &mirroring) override;
     bool cpu_read(uint16_t addr, uint32_t &mapaddr) override;
     bool cpu_write(uint16_t addr, uint32_t &mapaddr, uint8_t data) override;
     bool ppu_read(uint16_t addr, uint32_t &mapaddr) override;

@@ -73,7 +73,11 @@ bool ROM::cpu_read(uint16_t addr, uint8_t &data){
 
 bool ROM::cpu_write(uint16_t addr, uint8_t data){
     uint32_t mapaddr = 0;
-    if(mapper->cpu_write(addr,mapaddr,data)) return true;
+    if(mapper->cpu_write(addr,mapaddr,data)){
+        mirroring_type m;
+        if(mapper->get_mirroring(m))mirroring = m;
+        return true;
+    } 
     if(addr >= 0x6000 && addr <= 0x7fff){
         prg_ram[addr&0x1fff] = data;
         return true;

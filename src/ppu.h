@@ -35,6 +35,7 @@ class PPU{
     uint16_t pathigh;
     uint16_t attriblow;
     uint16_t attribhigh;
+    bool oddframe;
 
     Sprite sprites[8];
     uint8_t sprite_count;
