@@ -3,6 +3,7 @@
 #include "mapper/mapper0.h"
 #include "mapper/mapper1.h"
 #include "mapper/mapper3.h"
+#include "mapper/mapper2.h"
 
 ROM::ROM(){
     prg_size = 0;
@@ -47,6 +48,8 @@ bool ROM::load_rom(const std::string& rom_path){
         case 1:
             mapper = std::make_unique<Mapper1>(prg_size,chr_size);
             break;
+        case 2:
+            mapper = std::make_unique<Mapper2>(prg_size,chr_size);
         case 3:
             mapper = std::make_unique<Mapper3>(prg_size,chr_size);
             break;
