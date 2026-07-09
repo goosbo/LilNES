@@ -8,7 +8,7 @@ A little NES emulator with raylib.
 - parses iNES rom files, currently support for only mapper 0-3
 - controls and color accurate rendering with raylib
 
-## future features
+## Future Features
 - mapper 4 support
 - interactive debugger with disassembler
 - sprite and memory map viewer
