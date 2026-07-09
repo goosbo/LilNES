@@ -46,8 +46,10 @@ bool ROM::load_rom(const std::string& rom_path){
             break;
         case 1:
             mapper = std::make_unique<Mapper1>(prg_size,chr_size);
+            break;
         case 3:
             mapper = std::make_unique<Mapper3>(prg_size,chr_size);
+            break;
         default:
             std::cout<<"mapper not supported: "<<(int)mapper_id<<"\n";
             return false;
