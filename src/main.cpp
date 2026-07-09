@@ -33,7 +33,7 @@ int main(int argc, char* argv[]){
     ppu.attach_cpu(&cpu);
     ppu.attach_rom(&rom);
     cpu.reset();
-    for(int i = 0; i < 21; i++) ppu.step();
+    //for(int i = 0; i < 21; i++) ppu.step();
     
     Image screenImg = {ppu.screen,WIDTH,HEIGHT,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
     RenderTexture2D screenTexture = LoadRenderTexture(WIDTH, HEIGHT);
