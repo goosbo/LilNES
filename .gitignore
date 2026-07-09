@@ -3,3 +3,4 @@
 *.nes
 roms/
 .vscode/
+build/
