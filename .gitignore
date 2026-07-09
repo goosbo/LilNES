@@ -1,5 +1,5 @@
 *.log
-main.exe
+*.exe
 *.nes
 roms/
 .vscode/

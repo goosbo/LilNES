@@ -3,6 +3,8 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <memory>
+#include "mapper/mapper.h"
 
 struct ROM_header{
     char magic_bytes[4];
@@ -28,6 +30,7 @@ class ROM{
         std::vector<uint8_t> prg_ram;
         uint8_t mapper_id;
         uint8_t prg_size, chr_size;
+        std::unique_ptr<Mapper> mapper;
         
     public:
         ROM();
