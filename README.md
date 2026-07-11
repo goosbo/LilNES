@@ -15,6 +15,7 @@ A little NES emulator with raylib.
 - cycle accurate timing(works for the most part for now but fails some tests)
 - APU implementation
 - gui/cli emulator configuration
+- save file stuff
 
 ## Building
 ```

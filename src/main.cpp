@@ -17,7 +17,10 @@ int main(int argc, char* argv[]){
         return 1;
     }
     std::string romPath = argv[1];
+    
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "lilNES");
+    SetWindowMinSize(WIDTH*(SCALE-1), HEIGHT*(SCALE-1));
     SetTargetFPS(60);
     PPU ppu;
     CPU cpu;
@@ -67,10 +70,13 @@ int main(int argc, char* argv[]){
         UpdateTexture(screenTex, ppu.screen);
         BeginDrawing();
         ClearBackground(BLACK);
+        int win_width = GetScreenWidth(), win_height = GetScreenHeight();
+        float scale = std::min((float)win_width/WIDTH,(float)win_height/HEIGHT);
+
         DrawTexturePro(
             screenTex ,
             { 0, 0, (float)WIDTH, (float)HEIGHT }, 
-            { 0, 0, (float)(WIDTH * SCALE), (float)(HEIGHT * SCALE) },
+            { (win_width-WIDTH*scale)/2, (win_height-HEIGHT*scale)/2, WIDTH*scale, HEIGHT*scale },
             { 0, 0 }, 
             0.0f, 
             WHITE
